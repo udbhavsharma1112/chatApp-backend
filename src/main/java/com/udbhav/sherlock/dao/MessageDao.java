@@ -22,4 +22,8 @@ public interface MessageDao {
             "   OR (sender_id = :user2 AND receiver_id = :user1) " +
             "ORDER BY created_at")
     List<Message> getMessagesBetweenUsers(@Bind("user1") String user1, @Bind("user2") String user2);
+
+//     @SqlQuery("INSERT INTO messages (message_id, sender_id, )")
+
+    
 }

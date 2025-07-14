@@ -21,7 +21,7 @@ public interface UserChatDao {
     @SqlUpdate("INSERT INTO chat_user_mapping (id, user1_id, user2_id) " +
             "VALUES (:id, :user1Id, :user2Id) " +
             "ON DUPLICATE KEY UPDATE last_interaction = CURRENT_TIMESTAMP")
-    void upsertChatUserMapping(
+    void insertChatUserMapping(
             @Bind("id") String id,
             @Bind("user1Id") String user1Id,
             @Bind("user2Id") String user2Id);
