@@ -1,38 +1,30 @@
 package com.udbhav.sherlock.model;
 
 public class Message {
-    private String messageId;
-    private String receiverId;
-    private String senderId;
+    private String receiverName;
+    private String senderName;
     private String message;
 
     public Message() {}
-    public Message(String messageId, String receiverId, String senderId, String message) {
-        this.messageId = messageId;
-        this.receiverId = receiverId;
-        this.senderId = senderId;
+    public Message(String receiverName, String senderName, String message) {
+        this.receiverName = receiverName;
+        this.senderName = senderName;
         this.message = message;
     }
-    public String getMessageId() {
-        return messageId;
+    public String getReceiverName() {
+        return receiverName;
     }
-    public String getReceiverId() {
-        return receiverId;
-    }
-    public String getSenderId() {
-        return senderId;
+    public String getSenderName() {
+        return senderName;
     }
     public String getMessage() {
         return message;
     }
-    public void setMessageId(String messageId) {
-        this.messageId = messageId;
+    public void setReceiverName(String receiverName) {
+        this.receiverName = receiverName;
     }
-    public void setReceiverId(String receiverId) {
-        this.receiverId = receiverId;
-    }
-    public void setSenderId(String senderId) {
-        this.senderId = senderId;
+    public void setSenderName(String senderName) {
+        this.senderName = senderName;
     }
     public void setMessage(String message) {
         this.message = message;

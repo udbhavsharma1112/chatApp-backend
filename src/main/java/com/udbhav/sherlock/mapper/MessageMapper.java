@@ -12,9 +12,8 @@ public class MessageMapper implements RowMapper<Message> {
     @Override
     public Message map(ResultSet rs, StatementContext ctx) throws SQLException {
         Message message = new Message();
-        message.setMessageId(rs.getString("message_id"));
-        message.setSenderId(rs.getString("sender_id"));
-        message.setReceiverId(rs.getString("receiver_id"));
+        message.setSenderName(rs.getString("sender_name"));
+        message.setReceiverName(rs.getString("receiver_name"));
         message.setMessage(rs.getString("message"));
         return message;
     }

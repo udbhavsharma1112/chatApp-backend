@@ -5,6 +5,7 @@ import java.util.UUID;
 import com.udbhav.sherlock.dao.MessageDao;
 import com.udbhav.sherlock.dao.UserChatDao;
 import com.udbhav.sherlock.model.Message;
+import com.udbhav.sherlock.model.MessagePacket;
 
 public class MessageService {
     private final UserChatDao userChatDao;
@@ -14,9 +15,9 @@ public class MessageService {
         this.messageDao = messageDao;
         this.userChatDao = userChatDao;
     }
-    public void saveIncommingMessages(Message message){
+    public void saveIncommingMessages(MessagePacket message){
         String messageId = UUID.randomUUID().toString();
-        messageDao.insertMessage(messageId, message.getSenderId(), message.getReceiverId(), message.getMessage());
+        messageDao.insertMessage(messageId, message.getSenderId(), message.getReceiverId(), message.getMessageContent());
         String chatMappingId = UUID.randomUUID().toString();
         userChatDao.insertChatUserMapping(chatMappingId,message.getSenderId(),message.getReceiverId());
     }   

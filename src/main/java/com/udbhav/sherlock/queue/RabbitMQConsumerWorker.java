@@ -4,6 +4,7 @@ import com.rabbitmq.client.*;
 import com.udbhav.sherlock.dao.MessageDao;
 import com.udbhav.sherlock.dao.UserChatDao;
 import com.udbhav.sherlock.model.Message;
+import com.udbhav.sherlock.model.MessagePacket;
 import com.udbhav.sherlock.service.MessageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -37,9 +38,9 @@ public class RabbitMQConsumerWorker implements Runnable {
                 executor.submit(() -> {
                     try {
                         String json = new String(delivery.getBody(), "UTF-8");
-                        Message msg = objectMapper.readValue(json, Message.class);
+                        MessagePacket msg = objectMapper.readValue(json, MessagePacket.class);
                         messageService.saveIncommingMessages(msg);
-                        System.out.println("✅ Saved to DB: " + msg.getMessage());
+                        System.out.println("✅ Saved to DB: " + msg.getMessageContent());
                     } catch (Exception e) {
                         e.printStackTrace();
                     }

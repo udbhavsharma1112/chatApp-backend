@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.udbhav.sherlock.dao.MessageDao;
 import com.udbhav.sherlock.dao.UserChatDao;
 import com.udbhav.sherlock.model.Message;
+import com.udbhav.sherlock.model.MessagePacket;
 import com.udbhav.sherlock.queue.MessageQueuePublisher;
 import com.udbhav.sherlock.service.MessageService;
 
@@ -23,7 +24,7 @@ public class ChatMessageListener implements MessageListener {
     public void onMessageReceived(String topic, String message){
         System.out.println("📩 Message received on topic " + topic + ": " + message);
         try {
-            Message chatMessage = mapper.readValue(message, Message.class);
+            MessagePacket chatMessage = mapper.readValue(message, MessagePacket.class);
             publisher.publishMessage(chatMessage);
         } catch (Exception e) {
             System.err.println("❌ Error while processing MQTT message: " + e.getMessage());

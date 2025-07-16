@@ -3,6 +3,7 @@ package com.udbhav.sherlock.queue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.*;
 import com.udbhav.sherlock.model.Message;
+import com.udbhav.sherlock.model.MessagePacket;
 
 public class MessageQueuePublisher {
     private static final String EXCHANGE_NAME = "chat.exchange";
@@ -18,7 +19,7 @@ public class MessageQueuePublisher {
         channel.queueBind(ROUTING_KEY, EXCHANGE_NAME, ROUTING_KEY);
     }
 
-    public void publishMessage(Message message) throws Exception {
+    public void publishMessage(MessagePacket message) throws Exception {
         String json = objectMapper.writeValueAsString(message);
         channel.basicPublish(EXCHANGE_NAME, ROUTING_KEY, null, json.getBytes("UTF-8"));
         System.out.println("📤 Sent to RabbitMQ: " + json);
