@@ -42,7 +42,7 @@ public class RabbitMQConsumerWorker implements Runnable {
                         messageService.saveIncommingMessages(msg);
                         System.out.println("✅ Saved to DB: " + msg.getMessageContent());
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        System.err.println("❌ Error processing message: " + e.getMessage());
                     }
                 });
             };
@@ -51,7 +51,7 @@ public class RabbitMQConsumerWorker implements Runnable {
             System.out.println("🟢 RabbitMQ Consumer started...");
 
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("❌ Error starting RabbitMQ Consumer: " + e.getMessage());
         }
     }
 }

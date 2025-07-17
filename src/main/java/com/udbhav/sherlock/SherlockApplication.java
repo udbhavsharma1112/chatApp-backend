@@ -96,7 +96,6 @@ public class SherlockApplication extends Application<SherlockConfiguration> {
             System.out.println("✅ UserResource registered");
         } catch (Exception e) {
             System.err.println("❌ Exception during app startup: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 }

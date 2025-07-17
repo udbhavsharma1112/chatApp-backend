@@ -34,4 +34,7 @@ public interface UserDao {
     @SqlQuery("SELECT userId, userName, emailId FROM users WHERE userId IN (<ids>)")
     List<User> getUsersByIds(@BindList("ids") List<String> ids);
 
+    @SqlQuery("SELECT * FROM users WHERE emailId = :emailId")
+    @RegisterBeanMapper(User.class)
+    Optional<User> getUserByEmail(@Bind("emailId") String emailId);
 }

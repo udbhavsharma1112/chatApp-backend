@@ -12,7 +12,7 @@ public class MqttClientManager {
         try {
             this.client = new MqttClient(this.broker, this.clientId);
         } catch (MqttException e) {
-            e.printStackTrace();
+            System.err.println("Failed to create MQTT client: " + e.getMessage());
         }
     }
 
@@ -22,7 +22,7 @@ public class MqttClientManager {
             options.setCleanSession(false);
             client.connect(options);
         } catch (MqttException e) {
-            e.printStackTrace();
+            System.err.println("❌ Error connecting to MQTT broker: " + e.getMessage());
         }
     }
 
@@ -30,7 +30,7 @@ public class MqttClientManager {
         try {
             if (client.isConnected()) client.disconnect();
         } catch (MqttException e) {
-            e.printStackTrace();
+            System.err.println("❌ Error disconnecting from MQTT broker: " + e.getMessage());
         }
     }
 
