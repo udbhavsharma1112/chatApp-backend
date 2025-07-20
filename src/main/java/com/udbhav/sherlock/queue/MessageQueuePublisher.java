@@ -2,7 +2,6 @@ package com.udbhav.sherlock.queue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.*;
-import com.udbhav.sherlock.model.Message;
 import com.udbhav.sherlock.model.MessagePacket;
 
 public class MessageQueuePublisher {

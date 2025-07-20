@@ -1,19 +1,16 @@
 package com.udbhav.sherlock;
 
 import io.dropwizard.Application;
+import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
+import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.jdbi3.JdbiFactory;
-
-// import java.sql.Connection;
-
-import org.checkerframework.checker.units.qual.h;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.jdbi.v3.core.Jdbi;
-
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
-
+import com.udbhav.sherlock.queue.MessageQueueConfiguration;
 import com.udbhav.sherlock.queue.MessageQueuePublisher;
 import com.udbhav.sherlock.queue.RabbitMQConsumerWorker;
 import com.udbhav.sherlock.dao.AuthUserDao;
@@ -25,6 +22,7 @@ import com.udbhav.sherlock.mapper.MessageMapper;
 import com.udbhav.sherlock.mapper.UserMapper;
 import com.udbhav.sherlock.mqtt.ChatMessageListener;
 import com.udbhav.sherlock.mqtt.MqttClientManager;
+import com.udbhav.sherlock.mqtt.MqttConfiguration;
 import com.udbhav.sherlock.mqtt.MqttMessageHandler;
 import com.udbhav.sherlock.mqtt.MqttSubscriber;
 import com.udbhav.sherlock.resources.AuthResource;
@@ -44,62 +42,72 @@ public class SherlockApplication extends Application<SherlockConfiguration> {
 
     @Override
     public void initialize(final Bootstrap<SherlockConfiguration> bootstrap) {
-        // TODO: application initialization
+        bootstrap.setConfigurationSourceProvider(
+                new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(),
+                                               new EnvironmentVariableSubstitutor(false)
+                )
+        );
     }
 
     @Override
     public void run(SherlockConfiguration configuration, Environment environment) throws Exception {
         try {
+            // --- Database Setup ---
             final JdbiFactory factory = new JdbiFactory();
             final Jdbi jdbi = factory.build(environment, configuration.getDataSourceFactory(), "mysql");
             jdbi.registerRowMapper(new UserMapper());
             jdbi.registerRowMapper(new MessageMapper());
             jdbi.registerRowMapper(new AuthUserMapper());
+            System.out.println("✅ Database connection established");
 
             final UserDao userDao = jdbi.onDemand(UserDao.class);
             final AuthUserDao authUserDao = jdbi.onDemand(AuthUserDao.class);
             final UserChatDao userChatDao = jdbi.onDemand(UserChatDao.class);
             final MessageDao messageDao = jdbi.onDemand(MessageDao.class);
             environment.jersey().register(new AuthResource(authUserDao));
-
             environment.jersey().register(new UserChatHistoryResource(userChatDao, userDao));
             environment.jersey().register(new MessageResource(messageDao));
+            System.out.println("✅ Jersey resources registered");
 
-
+            // --- RabbitMQ Setup ---
+            MessageQueueConfiguration rmqConfig = configuration.getMessageQueueConfiguration();
             ConnectionFactory connectionFactory = new ConnectionFactory();
-            connectionFactory.setHost("localhost");
-            connectionFactory.setUsername("guest");
-            connectionFactory.setPassword("guest"); // or your credentials
-
+            connectionFactory.setHost(rmqConfig.getHost());
+            connectionFactory.setUsername(rmqConfig.getUsername());
+            connectionFactory.setPassword(rmqConfig.getPassword());
             Connection connection = connectionFactory.newConnection();
             MessageQueuePublisher publisher = new MessageQueuePublisher(connection);
+            System.out.println("✅ RabbitMQ connection established");
 
+            // --- MQTT Setup ---
+            // THIS IS THE FIX: The entire MQTT logic is in one try-catch block.
+            // If connect() fails, the subscription code will not be executed.
+            try {
+                MqttConfiguration mqttConfig = configuration.getMqttConfiguration();
+                MqttClientManager mqttManager = new MqttClientManager(mqttConfig.getClientId(), mqttConfig.getBrokerUrl());
+                
+                // This will now throw an exception and be caught below if it fails
+                mqttManager.connect();
 
+                MqttClient client = mqttManager.getClient();
+                client.setCallback(new MqttMessageHandler(new ChatMessageListener(messageDao, userChatDao, publisher)));
+                MqttSubscriber subscriber = new MqttSubscriber(client);
+                subscriber.subscribe("saveMessages");
+                System.out.println("✅ MQTT client connected and subscribed to topic: saveMessages");
+            } catch (Exception e) {
+                System.err.println("❌ Failed to setup MQTT client. The application will not listen for MQTT messages.");
+                // We print the stack trace to see the full error.
+                e.printStackTrace();
+            }
+            // --- END OF FIX ---
 
-            String clientId = "sherlock-backend-subscriber";
-            MqttClientManager mqttManager = new MqttClientManager(clientId);
-            mqttManager.connect();
+            // Start RabbitMQ consumer in a separate thread
+            new Thread(new RabbitMQConsumerWorker(connection, messageDao, userChatDao)).start();
+            System.out.println("🟢 RabbitMQ Consumer worker started");
 
-            MqttClient client = mqttManager.getClient();
-            client.setCallback(new MqttMessageHandler(new ChatMessageListener(messageDao, userChatDao, publisher)));
-            MqttSubscriber subscriber = new MqttSubscriber(client);
-            subscriber.subscribe("/saveMessages");
-
-            new Thread(new RabbitMQConsumerWorker(connection, messageDao, userChatDao)).start(); // Start RabbitMQ consumer worker
-
-
-
-// Store this in your app context or pass it to MQTT message handler
-
-
-
-            System.out.println("✅ UserResource registered");
         } catch (Exception e) {
-            System.err.println("❌ Exception during app startup: " + e.getMessage());
+            System.err.println("❌ Critical exception during app startup: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }
-
-
-
-
