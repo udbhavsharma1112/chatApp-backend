@@ -1,25 +1,19 @@
 # --- Stage 1: Build the application with Maven ---
-FROM maven:3.8-openjdk-11 AS build
-
-WORKDIR /app
-COPY pom.xml .
-RUN mvn dependency:go-offline
-COPY src ./src
-
-# --- NEW DEBUGGING STEP ---
-# This command searches for the critical line of code.
-# If the line is NOT found, grep will exit with an error, and the build will FAIL.
-# This is a definitive test to see if the correct code is being used.
-RUN grep "SubstitutingSourceProvider" /app/src/main/java/com/udbhav/sherlock/SherlockApplication.java
-# --- END OF DEBUGGING STEP ---
-
-RUN mvn package -DskipTests
-
-# --- Stage 2: Create the final, lightweight image ---
+# Start from a clean Java 11 runtime environment
 FROM openjdk:11-jre-slim
+
+# Set the working directory
 WORKDIR /app
-COPY --from=build /app/target/sherlock-1.0-SNAPSHOT.jar /app/app.jar
+
+# Copy the pre-built JAR file from your local 'target' directory into the image
+COPY target/sherlock-1.0-SNAPSHOT.jar /app/app.jar
+
+# Copy the configuration template into the image
 COPY config.yml .
+
+# Expose the application and admin ports
 EXPOSE 8080
 EXPOSE 8081
+
+# Set the command to run the application
 ENTRYPOINT ["java", "-jar", "/app/app.jar", "server", "config.yml"]

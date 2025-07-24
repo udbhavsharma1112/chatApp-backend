@@ -44,7 +44,7 @@ public class SherlockApplication extends Application<SherlockConfiguration> {
     public void initialize(final Bootstrap<SherlockConfiguration> bootstrap) {
         bootstrap.setConfigurationSourceProvider(
                 new SubstitutingSourceProvider(bootstrap.getConfigurationSourceProvider(),
-                                               new EnvironmentVariableSubstitutor(false)
+                                               new EnvironmentVariableSubstitutor(true)
                 )
         );
     }
@@ -72,21 +72,18 @@ public class SherlockApplication extends Application<SherlockConfiguration> {
             // --- RabbitMQ Setup ---
             MessageQueueConfiguration rmqConfig = configuration.getMessageQueueConfiguration();
             ConnectionFactory connectionFactory = new ConnectionFactory();
+            connectionFactory.useSslProtocol();
             connectionFactory.setHost(rmqConfig.getHost());
             connectionFactory.setUsername(rmqConfig.getUsername());
             connectionFactory.setPassword(rmqConfig.getPassword());
+            connectionFactory.setPort(Integer.parseInt(rmqConfig.getPort())); 
+
             Connection connection = connectionFactory.newConnection();
             MessageQueuePublisher publisher = new MessageQueuePublisher(connection);
             System.out.println("✅ RabbitMQ connection established");
-
-            // --- MQTT Setup ---
-            // THIS IS THE FIX: The entire MQTT logic is in one try-catch block.
-            // If connect() fails, the subscription code will not be executed.
             try {
                 MqttConfiguration mqttConfig = configuration.getMqttConfiguration();
                 MqttClientManager mqttManager = new MqttClientManager(mqttConfig.getClientId(), mqttConfig.getBrokerUrl());
-                
-                // This will now throw an exception and be caught below if it fails
                 mqttManager.connect();
 
                 MqttClient client = mqttManager.getClient();
@@ -94,16 +91,13 @@ public class SherlockApplication extends Application<SherlockConfiguration> {
                 MqttSubscriber subscriber = new MqttSubscriber(client);
                 subscriber.subscribe("saveMessages");
                 System.out.println("✅ MQTT client connected and subscribed to topic: saveMessages");
+            
+                new Thread(new RabbitMQConsumerWorker(connection, messageDao, userChatDao)).start();
+                System.out.println("🟢 RabbitMQ Consumer worker started");
             } catch (Exception e) {
                 System.err.println("❌ Failed to setup MQTT client. The application will not listen for MQTT messages.");
-                // We print the stack trace to see the full error.
                 e.printStackTrace();
             }
-            // --- END OF FIX ---
-
-            // Start RabbitMQ consumer in a separate thread
-            new Thread(new RabbitMQConsumerWorker(connection, messageDao, userChatDao)).start();
-            System.out.println("🟢 RabbitMQ Consumer worker started");
 
         } catch (Exception e) {
             System.err.println("❌ Critical exception during app startup: " + e.getMessage());
